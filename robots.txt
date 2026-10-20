@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://laotree.github.io/muse-ip-check/sitemap.xml

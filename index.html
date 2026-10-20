@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>访问 muse.ai 时我的机器用哪个 IP？｜ muse.ai 出口 IP · 分流检测</title>
+<meta name="description" content="参考 ip.skk.moe 分流检测（split tunnel）原理的在线小工具：在浏览器里实时对比阿里巴巴、腾讯、网易看到的直连 IP 与 claude.ai、chatgpt.com、Cloudflare 等国际站看到的出口 IP，判断访问 muse.ai 时走的是直连还是代理，并显示出口 IP 的归属地、城市与运营商。打开页面即检测，无需安装，不上报数据。">
+<meta name="keywords" content="muse.ai,出口IP,IP检测,分流检测,split tunnel,split-tunneling,网站分流测试,代理检测,VPN检测,我的IP,IP归属地,claude.ai,chatgpt.com,cdn-cgi/trace,ip.skk.moe">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Laotree">
+<meta name="theme-color" content="#f5f6f8">
+<link rel="canonical" href="https://laotree.github.io/muse-ip-check/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔍%3C/text%3E%3C/svg%3E">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:site_name" content="muse.ai 出口 IP 检查">
+<meta property="og:url" content="https://laotree.github.io/muse-ip-check/">
+<meta property="og:image" content="https://laotree.github.io/muse-ip-check/og.png">
+<meta property="og:title" content="访问 muse.ai 时我的机器用哪个 IP？｜ muse.ai 出口 IP · 分流检测">
+<meta property="og:description" content="在浏览器里实时对比国内站的直连 IP 与国际/AI 站的出口 IP，判断访问 muse.ai 时走直连还是走代理，并显示出口 IP 归属地。">
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://laotree.github.io/muse-ip-check/og.png">
+<meta name="twitter:title" content="访问 muse.ai 时我的机器用哪个 IP？｜ muse.ai 出口 IP · 分流检测">
+<meta name="twitter:description" content="在浏览器里实时对比国内站的直连 IP 与国际/AI 站的出口 IP，判断访问 muse.ai 时走直连还是走代理，并显示出口 IP 归属地。">
+<!-- 结构化数据 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "muse.ai 出口 IP 检查",
+  "alternateName": "访问 muse.ai 时我的机器用哪个 IP",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any (Web browser)",
+  "inLanguage": "zh-CN",
+  "description": "参考 ip.skk.moe 分流检测原理：在浏览器里实时对比阿里巴巴、腾讯、网易看到的直连 IP 与 claude.ai、chatgpt.com、Cloudflare 等国际站看到的出口 IP，判断访问 muse.ai 时走直连还是代理，并显示出口 IP 的归属地、城市与运营商。",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+  "featureList": "国内直连 IP 参照（阿里/腾讯/网易）、muse.ai 连通性与延迟检测、国际/AI 站出口 IP 参照（claude.ai / chatgpt.com / openai.com / cloudflare.com）、IP 归属地查询、直连与走代理自动判定、自定义同规则参照域名"
+}
+</script>
+<style>
+:root { color-scheme: light dark;}
+* { box-sizing: border-box;}
+body {
+font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+margin: 0; padding: 24px 16px 64px;
+background: #f5f6f8; color: #1a1d21;
+line-height: 1.6;
+}
+@media (prefers-color-scheme: dark) {
+body { background: #101418; color: #e6e9ee;}
+.card { background: #1a2027!important; border-color: #2b343d!important;}
+table { border-color: #2b343d!important;}
+th, td { border-color: #2b343d!important;}
+thead th { background: #1e262e!important;}
+tbody tr:nth-child(even) td { background: #161c22!important;}
+code,.mono { background: #242c34!important;}
+.geo, #verdict .detail, #verdict .detail .geo { color: #9aa4b2;}
+}
+@media (prefers-reduced-motion: reduce) { .skel { animation: none;}}
+.wrap { max-width: 980px; margin: 0 auto;}
+h1 { font-size: 22px; margin: 0 0 6px;}
+.sub { color: #6b7280; font-size: 14px; margin-bottom: 20px;}
+.card {
+background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+padding: 18px 20px; margin-bottom: 20px;
+}
+#verdict { font-size: 16px; font-weight: 600;}
+#verdict .detail { font-weight: 400; font-size: 14px; color: #6b7280; margin-top: 6px;}
+#verdict .detail .geo { color: #6b7280;}
+.badge { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px;}
+.ok { background: #dcfce7; color: #166534;}
+.warn { background: #fef3c7; color: #92400e;}
+.bad { background: #fee2e2; color: #991b1b;}
+.info { background: #dbeafe; color: #1e40af;}
+.grp { font-size: 14px; font-weight: 700; margin: 22px 0 8px; color: #4b5563;}
+table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; font-size: 14px;}
+thead th { background: #f3f4f6; text-align: left; padding: 10px 12px; font-weight: 600;}
+th, td { border-bottom: 1px solid #e5e7eb; padding: 10px 12px; vertical-align: middle;}
+tbody tr:nth-child(even) td { background: #fafbfc;}
+tbody tr:last-child td { border-bottom: none;}
+td.ip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap;}
+.geo { color: #6b7280; font-size: 13px;}
+.tag { display: inline-block; font-size: 12px; border: 1px solid #93c5fd; color: #1d4ed8;
+border-radius: 999px; padding: 0 8px; margin-left: 8px; vertical-align: 1px;}
+.tag.cn { border-color: #86efac; color: #15803d;}
+.tag.muse { border-color: #c4b5fd; color: #6d28d9;}
+.skel { display: inline-block; width: 9rem; height: 1em; border-radius: 4px;
+background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+background-size: 200% 100%; animation: sh 1.2s infinite; vertical-align: -2px;}
+@keyframes sh { to { background-position: -200% 0;}}
+.toolbar { display: flex; gap: 10px; margin: 14px 0 4px; flex-wrap: wrap; align-items: center;}
+button { cursor: pointer; border: 1px solid #d1d5db; background: #fff; color: #111827;
+border-radius: 8px; padding: 8px 16px; font-size: 14px;}
+button.primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff;}
+button:disabled { opacity:.5; cursor: default;}
+input[type=text] { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 14px; width: 260px;}
+code,.mono { background: #eef1f4; border-radius: 4px; padding: 1px 6px; font-size: 13px;
+font-family: ui-monospace, SFMono-Regular, Menlo, monospace;}
+.note { font-size: 13px; color: #6b7280;}
+details { margin-top: 12px; font-size: 13px; color: #6b7280;}
+summary { cursor: pointer;}
+.foot { margin-top: 28px; font-size: 12px; color: #9ca3af;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<noscript><div class="card">本工具需要在浏览器里运行 JavaScript 才能发起检测请求，请开启 JavaScript 后刷新页面。</div></noscript>
+
+<h1>访问 muse.ai 时，机器用的哪个 IP？</h1>
+<div class="sub">参考 <code>ip.skk.moe/split-tunnel</code> 的分流检测思路：让各大公司的服务器「亲口」报出它看到的你的 IP，对比就知道 muse.ai 走直连还是走代理。</div>
+
+<div class="card" id="verdictCard">
+<div id="verdict" aria-live="polite">检测中… <span class="skel"></span></div>
+</div>
+
+<div class="toolbar">
+<button type="button" class="primary" id="runBtn" onclick="runAll()">重新检测</button>
+<button type="button" onclick="copyResult()">复制结果</button>
+<span class="note" id="progress" role="status"></span>
+<span class="note" id="copyTip" aria-live="polite"></span>
+</div>
+
+<div class="grp">国内 · 直连参照（判断「没走代理长什么样」）</div>
+<div class="card"><table>
+<thead><tr><th>Website</th><th>IP</th><th>Geolocation</th></tr></thead>
+<tbody id="tb-domestic"></tbody>
+</table></div>
+
+<div class="grp">muse.ai 专区</div>
+<div class="card"><table>
+<thead><tr><th>Website</th><th>IP / 状态</th><th>说明</th></tr></thead>
+<tbody id="tb-muse"></tbody>
+</table></div>
+
+<div class="grp">国际 / AI · 出口参照（判断「走了代理长什么样」）</div>
+<div class="card"><table>
+<thead><tr><th>Website</th><th>IP</th><th>Geolocation</th></tr></thead>
+<tbody id="tb-intl"></tbody>
+</table>
+<div class="note" id="geoNote" hidden>归属地查询被限流或失败：表中已降级为只显示国家代码，「—」表示连国家代码也拿不到。点「重新检测」可重试。</div>
+<div class="toolbar">
+<input type="text" id="customDomain" placeholder="自定义同规则参照域名，如 example.com" aria-label="自定义参照域名">
+<button type="button" onclick="addCustom()">添加参照</button>
+</div>
+<div class="note">想 100% 精确？在你的代理客户端里，把这个自定义域名和 <code>muse.ai</code> 放进<strong>同一个策略组</strong>，它报出的 IP 就是 muse.ai 的真实出口 IP。</div>
+</div>
+
+<div class="card note">
+<strong>为什么 muse.ai 这一行读不到 IP？</strong><br>
+实测 <code>muse.ai</code> 跑在 Vercel 上（不是 Cloudflare），<code>/cdn-cgi/trace</code> 返回 401
+<code>{"error":"Authentication required"}</code>，全站也没有任何回显客户端 IP 的公开接口。所以浏览器 JS 拿不到「访问 muse.ai 时对方看到的 IP」——
+只能看「本站可达性/延迟」+「与它同规则的参照站 IP」来推断。这是浏览器侧的硬限制，不是本页面的 bug。
+想做到 100% 精确：看代理客户端的 Connections 日志（过滤 <code>muse.ai</code> 看走了哪个出站），或用上面的自定义参照域名法。
+</div>
+
+<div class="foot">页面没有后端，也没有统计代码：不收集、不上报任何数据。所有检测请求由你的浏览器直接发往各探针站点，结果只显示在你眼前。也可以克隆仓库在本机离线运行。源码：<a href="https://github.com/Laotree/muse-ip-check">Laotree/muse-ip-check</a></div>
+</div>
+
+<script>
+"use strict";
+const GEO_CACHE = new Map();
+const RESULTS = { domestic: [], intl: [], museRefer: null, museReach: null};
+const FETCH_TIMEOUT = 12000;
+let GEO_DEGRADED = false;
+let RUNNING = false;
+
+/* ---------- 网络 ---------- */
+async function fetchWithTimeout(url, opts){
+const ctl = new AbortController();
+const t = setTimeout(()=>ctl.abort(), FETCH_TIMEOUT);
+try{
+return await fetch(url, Object.assign({}, opts, {signal: ctl.signal}));
+}catch(e){
+if(e && e.name === "AbortError") throw new Error("请求超时");
+throw e;
+}finally{
+clearTimeout(t);
+}
+}
+
+function fetchJsonp(url){
+return new Promise((resolve, reject)=>{
+const cb = "__cb_" + Math.random().toString(36).slice(2);
+const t = setTimeout(()=>{ cleanup(); reject(new Error("JSONP 超时"));}, FETCH_TIMEOUT);
+function cleanup(){
+clearTimeout(t);
+const s = document.getElementById(cb); s && s.remove();
+try{ delete window[cb];}catch(e){}
+}
+window[cb] = (data)=>{ cleanup(); resolve(data);};
+const s = document.createElement("script");
+s.id = cb; s.src = url + cb;
+s.onerror = ()=>{ cleanup(); reject(new Error("JSONP 加载失败"));};
+document.head.appendChild(s);
+});
+}
+
+/* ---------- 探针 ---------- */
+// 阿里：dns-detect.alicdn.com JSONP -> content.localIp / ipCountry
+async function probeAlibaba(){
+const rand = Date.now() + "-" + Math.random().toString(36).slice(2,18);
+const d = await fetchJsonp("https://" + rand + ".dns-detect.alicdn.com/api/detect/DescribeDNSLookup?cb=");
+if(!d ||!d.content ||!d.content.localIp) throw new Error("返回异常");
+return { ip: d.content.localIp, cc: (d.content.ipCountry || "").toUpperCase()};
+}
+// 腾讯：r.inews.qq.com JSONP -> ip / country,province,city,isp
+async function probeTencent(){
+const d = await fetchJsonp("https://r.inews.qq.com/api/ip2city?otype=jsonp&callback=");
+if(!d || d.ret!== 0 ||!d.ip) throw new Error("返回异常" + (d && d.errMsg? "：" + d.errMsg : ""));
+const geo = [d.country, d.province, d.city, d.isp].filter(Boolean).join(" ");
+return { ip: d.ip, geoString: geo};
+}
+// 网易：necaptcha 图片 HEAD -> cdn-user-ip（带 CORS * + Expose *）
+async function probeNetease(){
+const r = await fetchWithTimeout("https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png", { method: "HEAD", cache: "no-store"});
+if(!r.ok) throw new Error("HTTP " + r.status);
+const ip = r.headers.get("cdn-user-ip");
+if(!ip) throw new Error("没读到 cdn-user-ip");
+return { ip: ip};
+}
+// Cloudflare 系：https://<domain>/cdn-cgi/trace -> ip= / loc=
+async function probeCfTrace(domain){
+const r = await fetchWithTimeout("https://" + domain + "/cdn-cgi/trace?_=" + Date.now(), { cache: "no-store"});
+if(!r.ok) throw new Error("HTTP " + r.status);
+const t = await r.text();
+const kv = {};
+t.split("\n").forEach(line=>{ const i = line.indexOf("="); if(i > 0) kv[line.slice(0, i)] = line.slice(i + 1);});
+if(!kv.ip) throw new Error("trace 无 ip 字段");
+return { ip: kv.ip, cc: (kv.loc || "").toUpperCase()};
+}
+// muse.ai 本站可达性：favicon.ico（确认带 ACAO:*）测延迟
+async function probeMuseReach(){
+const t0 = performance.now();
+const r = await fetchWithTimeout("https://muse.ai/favicon.ico?_=" + Date.now(), { cache: "no-store"});
+const ms = Math.round(performance.now() - t0);
+if(!r.ok) throw new Error("HTTP " + r.status);
+return { ok: true, ms: ms};
+}
+function ccEmoji(cc){
+if(!cc || cc.length!== 2) return "";
+return String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397 + c.charCodeAt(0)));
+}
+// IP 归属地：ipwho.is。失败时不缓存，下次检测会重试。
+async function geoOf(ip, cc){
+if(!ip) return "";
+if(GEO_CACHE.has(ip)) return GEO_CACHE.get(ip);
+let text = "";
+try{
+const r = await fetchWithTimeout("https://ipwho.is/" + encodeURIComponent(ip) + "?lang=en");
+const d = await r.json();
+if(d && d.success){
+const parts = [d.country, d.region, d.city].filter(Boolean).join(" ");
+const isp = (d.connection && (d.connection.isp || d.connection.org)) || "";
+const flag = (d.flag && d.flag.emoji) || ccEmoji(cc || d.country_code);
+text = (flag? flag + " " : "") + parts + (isp? " · " + isp : "");
+}
+}catch(e){}
+if(text){
+GEO_CACHE.set(ip, text);
+return text;
+}
+GEO_DEGRADED = true;
+return cc? ccEmoji(cc) + " " + cc + "（仅国家）" : "—";
+}
+
+/* ---------- 渲染 ---------- */
+function addRow(tbody, name, tag, tagCls, skeleton){
+const tr = document.createElement("tr");
+const tdName = document.createElement("td");
+const nameEl = document.createElement("span");
+nameEl.textContent = name;
+const tagEl = document.createElement("span");
+tagEl.className = "tag " + (tagCls || "");
+tagEl.textContent = tag;
+tdName.append(nameEl, document.createTextNode(" "), tagEl);
+const tdIp = document.createElement("td");
+tdIp.className = "ip";
+const tdGeo = document.createElement("td");
+tdGeo.className = "geo";
+if(skeleton){
+tdIp.innerHTML = '<span class="skel"></span>';
+tdGeo.innerHTML = '<span class="skel" style="width:12rem"></span>';
+}
+tr.append(tdName, tdIp, tdGeo);
+tbody.appendChild(tr);
+return { tr: tr, tdIp: tdIp, tdGeo: tdGeo};
+}
+async function runProbe(name, tag, tagCls, tbody, fn, bucket){
+const row = addRow(tbody, name, tag, tagCls, true);
+try{
+const r = await fn();
+row.tdIp.textContent = r.ip;
+const geo = r.geoString || await geoOf(r.ip, r.cc);
+row.tdGeo.textContent = geo;
+r.geoText = geo;
+if(bucket) bucket.push(r.ip);
+return r;
+}catch(e){
+const span = document.createElement("span");
+span.style.color = "#991b1b";
+span.textContent = "获取失败（" + e.message + "）";
+row.tdIp.replaceChildren(span);
+row.tdGeo.textContent = "";
+return null;
+}
+}
+function esc(s){
+return String(s).replace(/[&<>"']/g, c=>({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+}
+
+/* ---------- 主流程 ---------- */
+const INTL_DOMAINS = [
+{ name: "www.cloudflare.com", tag: "国际 · 云厂商"},
+{ name: "chatgpt.com", tag: "国际 AI"},
+{ name: "openai.com", tag: "国际 AI"},
+];
+
+async function runAll(){
+if(RUNNING) return;
+RUNNING = true;
+const btn = document.getElementById("runBtn");
+const progress = document.getElementById("progress");
+btn.disabled = true;
+GEO_DEGRADED = false;
+document.getElementById("geoNote").hidden = true;
+document.getElementById("copyTip").textContent = "";
+progress.textContent = "检测中…";
+document.getElementById("verdict").innerHTML = '检测中… <span class="skel"></span>';
+RESULTS.domestic = []; RESULTS.intl = []; RESULTS.museRefer = null; RESULTS.museReach = null;
+
+document.getElementById("tb-domestic").replaceChildren();
+document.getElementById("tb-muse").replaceChildren();
+document.getElementById("tb-intl").replaceChildren();
+
+const domP = [
+runProbe("阿里巴巴", "国内", "cn", document.getElementById("tb-domestic"),
+probeAlibaba, RESULTS.domestic),
+runProbe("腾讯", "国内", "cn", document.getElementById("tb-domestic"),
+probeTencent, RESULTS.domestic),
+runProbe("网易", "国内", "cn", document.getElementById("tb-domestic"),
+probeNetease, RESULTS.domestic),
+];
+
+const museTb = document.getElementById("tb-muse");
+const museRow = addRow(museTb, "muse.ai", "本站", "muse", true);
+museRow.tdGeo.textContent = "测连通性与延迟（无 IP 回显接口）";
+const reachP = (async ()=>{
+try{
+const r = await probeMuseReach();
+const span = document.createElement("span");
+span.style.color = "#166534";
+span.textContent = "可达 · " + r.ms + " ms";
+museRow.tdIp.replaceChildren(span);
+RESULTS.museReach = r;
+}catch(e){
+const span = document.createElement("span");
+span.style.color = "#991b1b";
+span.textContent = "不可达（" + e.message + "）";
+museRow.tdIp.replaceChildren(span);
+}
+})();
+const referP = runProbe("claude.ai", "参考站", "muse", museTb,
+()=>probeCfTrace("claude.ai"), null).then(r=>{ RESULTS.museRefer = r;});
+
+const intlP = INTL_DOMAINS.map(d =>
+runProbe(d.name, d.tag, "", document.getElementById("tb-intl"),
+()=>probeCfTrace(d.name), RESULTS.intl));
+
+await Promise.allSettled([...domP, reachP, referP, ...intlP]);
+
+await renderVerdict();
+document.getElementById("geoNote").hidden = !GEO_DEGRADED;
+btn.disabled = false;
+RUNNING = false;
+progress.textContent = "检测完成 " + new Date().toLocaleTimeString();
+}
+
+function ipStats(list){
+const counts = new Map();
+list.forEach(ip=>counts.set(ip, (counts.get(ip) || 0) + 1));
+const sorted = [...counts.entries()].sort((a, b)=>b[1] - a[1]);
+return {
+top: sorted.length? sorted[0][0] : null,
+tied: sorted.length > 1 && sorted[0][1] === sorted[1][1],
+};
+}
+
+async function renderVerdict(){
+const v = document.getElementById("verdict");
+const direct = ipStats(RESULTS.domestic);
+const proxyIp = RESULTS.museRefer && RESULTS.museRefer.ip;
+const reach = RESULTS.museReach;
+const allIps = [...RESULTS.domestic, ...RESULTS.intl, proxyIp].filter(Boolean);
+// 全局代理模式下所有探针共用一个出口，此时直连与代理无从区分。
+const allSame = allIps.length >= 3 && new Set(allIps).size === 1 &&
+(proxyIp || RESULTS.intl.length > 0);
+const reachText = reach? 'muse.ai 本站 ' + reach.ms + ' ms 可达。' : 'muse.ai 本站不可达。';
+
+if(allSame){
+v.innerHTML = '所有探针都从同一个出口 IP <code class="ip">' + esc(allIps[0]) + '</code> 出去 <span class="badge info">无法区分</span>'
++ '<div class="detail">这通常意味着代理处于全局模式，或当前没有走代理。此时无法判断 muse.ai 是直连还是走代理，请切到规则分流模式后重测，或直接查看代理客户端的 Connections 日志。'
++ reachText + '</div>';
+return;
+}
+if(!direct.top &&!proxyIp){
+v.innerHTML = '没拿到足够的参照数据 <span class="badge bad">检测失败</span>'
++ '<div class="detail">国内和国外探针都失败了，可能是网络断开或探针被拦截。点「重新检测」再试一次。</div>';
+return;
+}
+if(proxyIp && direct.top){
+const geo = RESULTS.museRefer.geoText || await geoOf(proxyIp, RESULTS.museRefer.cc);
+const conflict = direct.tied? '<div class="detail">注意：国内探针给出的 IP 不一致，直连 IP 只是其中出现次数最多的一个。</div>' : '';
+if(proxyIp === direct.top){
+v.innerHTML = 'muse.ai 大概率是<strong>直连</strong>的 <span class="badge ok">直连</span>'
++ '<div class="detail">国内参照 IP <code>' + esc(direct.top) + '</code> 与参考站 IP <code>' + esc(proxyIp) + '</code> 一致，'
++ reachText
++ '注意：这是推断，参考站与 muse.ai 的分流规则可能不同，100% 确认请看代理客户端的 Connections 日志。</div>' + conflict;
+}else{
+v.innerHTML = 'muse.ai 大概率<strong>走代理</strong> <span class="badge warn">走代理</span>'
++ '<div class="detail">直连 IP <code>' + esc(direct.top) + '</code>；参考站出口 IP <code class="ip">' + esc(proxyIp) + '</code>'
++ '<div class="geo">' + esc(geo) + '</div>'
++ reachText
++ '判定依据：参考站（claude.ai 或你自定义的域名）与直连 IP 不同。不同分流规则下 muse.ai 可能不同，100% 确认请看代理客户端的 Connections 日志。</div>' + conflict;
+}
+return;
+}
+if(proxyIp){
+const geo = RESULTS.museRefer.geoText || await geoOf(proxyIp, RESULTS.museRefer.cc);
+v.innerHTML = '参考站出口 IP：<code class="ip">' + esc(proxyIp) + '</code> <span class="badge info">仅参照</span>'
++ '<div class="detail"><div class="geo">' + esc(geo) + '</div>国内参照没拿到，无法对比判定。' + reachText + '</div>';
+return;
+}
+v.innerHTML = '国内直连 IP：<code class="ip">' + esc(direct.top) + '</code> <span class="badge info">仅参照</span>'
++ '<div class="detail">国外/AI 探针全部失败，无法判定 muse.ai 的出口。可能是代理拦截了这些探针域名。</div>';
+}
+
+function normalizeHost(value){
+const host = value.trim().toLowerCase()
+.replace(/^https?:\/\//, "")
+.replace(/\/.*$/, "")
+.replace(/:\d+$/, "");
+if(!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(host)) return null;
+return host;
+}
+
+async function addCustom(){
+const el = document.getElementById("customDomain");
+const tip = (msg)=>{ document.getElementById("copyTip").textContent = msg;};
+const host = normalizeHost(el.value);
+if(!host){
+el.focus();
+tip("请输入有效域名，例如 example.com");
+return;
+}
+el.value = "";
+tip("正在检测 " + host + " …");
+const r = await runProbe(host, "自定义参照", "", document.getElementById("tb-intl"),
+()=>probeCfTrace(host), RESULTS.intl);
+if(r){
+RESULTS.museRefer = r;
+await renderVerdict();
+tip("已用 " + host + " 作为参照重新判定");
+}else{
+tip(host + " 没有 /cdn-cgi/trace 或不可达");
+}
+}
+
+function copyResult(){
+const lines = ["muse.ai 出口 IP 检测（" + new Date().toLocaleString() + "）"];
+const dump = (title, id)=>{
+lines.push("", "【" + title + "】");
+[...document.getElementById(id).children].forEach(tr=>{
+const cells = [...tr.children].map(td=>td.textContent.replace(/\s+/g, " ").trim());
+lines.push(cells.join(" | "));
+});
+};
+dump("国内直连参照", "tb-domestic");
+dump("muse.ai 专区", "tb-muse");
+dump("国际/AI 出口参照", "tb-intl");
+lines.push("", "判定：" + document.getElementById("verdict").innerText.replace(/\s+/g, " ").trim());
+const tip = (msg)=>{ const el = document.getElementById("copyTip"); el.textContent = msg; setTimeout(()=>{ el.textContent = "";}, 3000);};
+if(navigator.clipboard && navigator.clipboard.writeText){
+navigator.clipboard.writeText(lines.join("\n")).then(
+()=>tip("已复制到剪贴板"),
+()=>tip("复制失败，请手动选择复制"));
+}else{
+tip("当前环境不支持一键复制，请手动选择复制");
+}
+}
+
+window.addEventListener("DOMContentLoaded", runAll);
+</script>
+</body>
+</html>
