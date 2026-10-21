@@ -36,7 +36,7 @@
   "inLanguage": "zh-CN",
   "description": "参考 ip.skk.moe 分流检测原理：在浏览器里实时对比阿里巴巴、腾讯、网易看到的直连 IP 与 claude.ai、chatgpt.com、Cloudflare 等国际站看到的出口 IP，判断访问 muse.ai 时走直连还是代理，并显示出口 IP 的归属地、城市与运营商。",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
-  "featureList": "国内直连 IP 参照（阿里/腾讯/网易）、muse.ai 连通性与延迟检测、国际/AI 站出口 IP 参照（claude.ai / chatgpt.com / openai.com / cloudflare.com）、IP 归属地查询、直连与走代理自动判定、自定义同规则参照域名"
+  "featureList": "国内直连 IP 参照（阿里/腾讯/网易）、muse.ai 连通性与 HTTP 耗时检测、国际/AI 站出口 IP 参照（claude.ai / chatgpt.com / openai.com / cloudflare.com）、IP 归属地查询、直连与走代理自动判定、自定义同规则参照域名"
 }
 </script>
 <style>
@@ -151,7 +151,8 @@ summary { cursor: pointer;}
 <strong>为什么 muse.ai 这一行读不到 IP？</strong><br>
 实测 <code>muse.ai</code> 跑在 Vercel 上（不是 Cloudflare），<code>/cdn-cgi/trace</code> 返回 401
 <code>{"error":"Authentication required"}</code>，全站也没有任何回显客户端 IP 的公开接口。所以浏览器 JS 拿不到「访问 muse.ai 时对方看到的 IP」——
-只能看「本站可达性/延迟」+「与它同规则的参照站 IP」来推断。这是浏览器侧的硬限制，不是本页面的 bug。
+只能看「本站可达性与 HTTP 耗时」+「与它同规则的参照站 IP」来推断。这是浏览器侧的硬限制，不是本页面的 bug。
+首请求包含 DNS、TCP、TLS；想和 <code>ping</code> 比较，请看「复用连接」值，它更接近单程往返。
 想做到 100% 精确：看代理客户端的 Connections 日志（过滤 <code>muse.ai</code> 看走了哪个出站），或用上面的自定义参照域名法。
 </div>
 
@@ -230,13 +231,24 @@ t.split("\n").forEach(line=>{ const i = line.indexOf("="); if(i > 0) kv[line.sli
 if(!kv.ip) throw new Error("trace 无 ip 字段");
 return { ip: kv.ip, cc: (kv.loc || "").toUpperCase()};
 }
-// muse.ai 本站可达性：favicon.ico（确认带 ACAO:*）测延迟
-async function probeMuseReach(){
+// muse.ai 本站可达性：favicon.ico（确认带 ACAO:*）。
+// 浏览器发不了 ICMP。一次 fetch 的耗时含 DNS、TCP、TLS 与请求往返，
+// 不能直接与 ping 的单次往返比较。
+// 先冷连接测一次，再复用连接测一次；后者更接近单程 RTT。
+async function timedFetch(url){
 const t0 = performance.now();
-const r = await fetchWithTimeout("https://muse.ai/favicon.ico?_=" + Date.now(), { cache: "no-store"});
-const ms = Math.round(performance.now() - t0);
-if(!r.ok) throw new Error("HTTP " + r.status);
-return { ok: true, ms: ms};
+const r = await fetchWithTimeout(url + "?_=" + Date.now(), { cache: "no-store"});
+return { ok: r.ok, status: r.status, ms: Math.round(performance.now() - t0)};
+}
+async function probeMuseReach(){
+const first = await timedFetch("https://muse.ai/favicon.ico");
+if(!first.ok) throw new Error("HTTP " + first.status);
+let reused = null;
+try{
+const second = await timedFetch("https://muse.ai/favicon.ico");
+if(second.ok) reused = second.ms;
+}catch(e){}
+return { first: first.ms, reused: reused};
 }
 function ccEmoji(cc){
 if(!cc || cc.length!== 2) return "";
@@ -345,13 +357,14 @@ probeNetease, RESULTS.domestic),
 
 const museTb = document.getElementById("tb-muse");
 const museRow = addRow(museTb, "muse.ai", "本站", "muse", true);
-museRow.tdGeo.textContent = "测连通性与延迟（无 IP 回显接口）";
+museRow.tdGeo.textContent = "测连通性（无 IP 回显接口）；首请求含连接建立，复用值更接近 RTT";
 const reachP = (async ()=>{
 try{
 const r = await probeMuseReach();
 const span = document.createElement("span");
 span.style.color = "#166534";
-span.textContent = "可达 · " + r.ms + " ms";
+span.textContent = "可达 · 首请求 " + r.first + " ms"
++ (r.reused != null? " / 复用 " + r.reused + " ms" : "");
 museRow.tdIp.replaceChildren(span);
 RESULTS.museReach = r;
 }catch(e){
@@ -396,7 +409,11 @@ const allIps = [...RESULTS.domestic, ...RESULTS.intl, proxyIp].filter(Boolean);
 // 全局代理模式下所有探针共用一个出口，此时直连与代理无从区分。
 const allSame = allIps.length >= 3 && new Set(allIps).size === 1 &&
 (proxyIp || RESULTS.intl.length > 0);
-const reachText = reach? 'muse.ai 本站 ' + reach.ms + ' ms 可达。' : 'muse.ai 本站不可达。';
+const reachText = reach
+? 'muse.ai 本站可达（首请求 ' + reach.first + ' ms'
++ (reach.reused != null? '，复用连接 ' + reach.reused + ' ms' : '')
++ '；HTTP 耗时，含连接建立，非 ICMP）。'
+: 'muse.ai 本站不可达。';
 
 if(allSame){
 v.innerHTML = '所有探针都从同一个出口 IP <code class="ip">' + esc(allIps[0]) + '</code> 出去 <span class="badge info">无法区分</span>'

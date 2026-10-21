@@ -78,7 +78,14 @@ def probe_cf_trace(domain):
 
 
 def probe_muse_reach():
-    status, _, _, ms = http_get("https://muse.ai/favicon.ico")
+    # 记到响应头到达为止,与浏览器 fetch 的口径一致。
+    # 终端版每次新建连接,拿不到复用连接值,因此只报首请求。
+    url = f"https://muse.ai/favicon.ico?_={int(time.time() * 1000)}"
+    req = urllib.request.Request(url, headers=UA)
+    t0 = time.time()
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        ms = int((time.time() - t0) * 1000)
+        status = r.status
     if status != 200:
         raise RuntimeError(f"HTTP {status}")
     return {"ms": ms}
@@ -184,7 +191,7 @@ def main():
     reach = reach_f.result()
     if reach["ok"]:
         reach_ms = reach["data"]["ms"]
-        print(f"  ok   muse.ai 可达，延迟 {reach_ms} ms")
+        print(f"  ok   muse.ai 可达，首请求 {reach_ms} ms（含连接建立，非 ICMP）")
     else:
         reach_ms = None
         print(f"  fail muse.ai 不可达：{reach['err']}")
@@ -224,7 +231,8 @@ def main():
 
     direct_ip, tie = most_common(domestic_ips)
     all_ips = domestic_ips + intl_ips + ([refer_ip] if refer_ip else [])
-    reach_text = f"muse.ai 本站 {reach_ms} ms 可达。" if reach_ms is not None else "muse.ai 本站不可达。"
+    reach_text = (f"muse.ai 本站首请求 {reach_ms} ms 可达（HTTP 耗时，含连接建立，非 ICMP）。"
+                  if reach_ms is not None else "muse.ai 本站不可达。")
 
     print("\n判定:")
     if len(all_ips) >= 3 and len(set(all_ips)) == 1:
