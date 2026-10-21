@@ -102,6 +102,29 @@ font-family: ui-monospace, SFMono-Regular, Menlo, monospace;}
 details { margin-top: 12px; font-size: 13px; color: #6b7280;}
 summary { cursor: pointer;}
 .foot { margin-top: 28px; font-size: 12px; color: #9ca3af;}
+@media (max-width: 640px) {
+body { padding: 16px 12px 48px;}
+h1 { font-size: 19px;}
+.sub { font-size: 13px;}
+.card { padding: 14px;}
+table { border: none;}
+table, thead, tbody, tr, td { display: block;}
+thead { display: none;}
+tbody tr { padding: 10px 0; border-bottom: 1px solid #e5e7eb;}
+tbody tr:first-child { padding-top: 0;}
+tbody tr:last-child { border-bottom: none; padding-bottom: 0;}
+td { border: none; padding: 1px 0;}
+td::before { content: attr(data-label) "："; color: #6b7280; font-size: 12px;}
+td:first-child::before { content: none;}
+td.ip { white-space: normal; overflow-wrap: anywhere;}
+td:empty { display: none;}
+.tag { white-space: nowrap;}
+input[type=text] { width: 100%; font-size: 16px;}
+}
+@media (max-width: 640px) and (prefers-color-scheme: dark) {
+tbody tr { border-color: #2b343d;}
+td::before { color: #9aa4b2;}
+}
 </style>
 </head>
 <body>
@@ -280,6 +303,7 @@ return cc? ccEmoji(cc) + " " + cc + "（仅国家）" : "—";
 /* ---------- 渲染 ---------- */
 function addRow(tbody, name, tag, tagCls, skeleton){
 const tr = document.createElement("tr");
+const headers = [...tbody.closest("table").querySelectorAll("thead th")].map(th=>th.textContent.trim());
 const tdName = document.createElement("td");
 const nameEl = document.createElement("span");
 nameEl.textContent = name;
@@ -291,6 +315,8 @@ const tdIp = document.createElement("td");
 tdIp.className = "ip";
 const tdGeo = document.createElement("td");
 tdGeo.className = "geo";
+tdIp.dataset.label = headers[1] || "";
+tdGeo.dataset.label = headers[2] || "";
 if(skeleton){
 tdIp.innerHTML = '<span class="skel"></span>';
 tdGeo.innerHTML = '<span class="skel" style="width:12rem"></span>';
@@ -363,8 +389,8 @@ try{
 const r = await probeMuseReach();
 const span = document.createElement("span");
 span.style.color = "#166534";
-span.textContent = "可达 · 首请求 " + r.first + " ms"
-+ (r.reused != null? " / 复用 " + r.reused + " ms" : "");
+span.textContent = "可达 · 首请求 " + r.first + "\u00A0ms"
++ (r.reused != null? " / 复用 " + r.reused + "\u00A0ms" : "");
 museRow.tdIp.replaceChildren(span);
 RESULTS.museReach = r;
 }catch(e){
@@ -410,8 +436,8 @@ const allIps = [...RESULTS.domestic, ...RESULTS.intl, proxyIp].filter(Boolean);
 const allSame = allIps.length >= 3 && new Set(allIps).size === 1 &&
 (proxyIp || RESULTS.intl.length > 0);
 const reachText = reach
-? 'muse.ai 本站可达（首请求 ' + reach.first + ' ms'
-+ (reach.reused != null? '，复用连接 ' + reach.reused + ' ms' : '')
+? 'muse.ai 本站可达（首请求 ' + reach.first + '\u00A0ms'
++ (reach.reused != null? '，复用连接 ' + reach.reused + '\u00A0ms' : '')
 + '；HTTP 耗时，含连接建立，非 ICMP）。'
 : 'muse.ai 本站不可达。';
 
