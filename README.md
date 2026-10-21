@@ -102,6 +102,7 @@ ICMP ping 只含一次往返，两者不是同一个量。本机实测 ping 218 
 | `server.py` | 零依赖本地静态服务器（Python 3 标准库） |
 | `robots.txt` / `sitemap.xml` | 搜索引擎配置 |
 | `og.png` | 分享卡图片 |
+| `LICENSE` | MIT 许可证 |
 | `README.md` | 本文件 |
 
 ## 部署
@@ -127,3 +128,7 @@ ICMP ping 只含一次往返，两者不是同一个量。本机实测 ping 218 
 - 探针都依赖第三方接口，对方改动接口或限流时会降级：归属地一列可能只显示国家代码或「—」，
   重新检测即可重试。
 - `muse.ai` 的站点地址、Cloudflare trace 行为都可能变化，页面底部的说明以最近一次实测为准。
+
+## License
+
+MIT 许可证，详见 [LICENSE](LICENSE)。
