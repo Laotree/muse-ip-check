@@ -101,6 +101,7 @@ font-family: ui-monospace, SFMono-Regular, Menlo, monospace;}
 .note { font-size: 13px; color: #6b7280;}
 details { margin-top: 12px; font-size: 13px; color: #6b7280;}
 summary { cursor: pointer;}
+.links { font-size: 13px; margin-top: 18px; color: #6b7280;}
 .foot { margin-top: 28px; font-size: 12px; color: #9ca3af;}
 @media (max-width: 640px) {
 body { padding: 16px 12px 48px;}
@@ -132,7 +133,7 @@ td::before { color: #9aa4b2;}
 <noscript><div class="card">本工具需要在浏览器里运行 JavaScript 才能发起检测请求，请开启 JavaScript 后刷新页面。</div></noscript>
 
 <h1>访问 muse.ai 时，机器用的哪个 IP？</h1>
-<div class="sub">参考 <code>ip.skk.moe/split-tunnel</code> 的分流检测思路：让各大公司的服务器「亲口」报出它看到的你的 IP，对比就知道 muse.ai 走直连还是走代理。</div>
+<div class="sub">对比各站看到的出口 IP，判断 muse.ai 走直连还是代理。</div>
 
 <div class="card" id="verdictCard">
 <div id="verdict" aria-live="polite">检测中… <span class="skel"></span></div>
@@ -145,7 +146,7 @@ td::before { color: #9aa4b2;}
 <span class="note" id="copyTip" aria-live="polite"></span>
 </div>
 
-<div class="grp">国内 · 直连参照（判断「没走代理长什么样」）</div>
+<div class="grp">国内 · 直连参照</div>
 <div class="card"><table>
 <thead><tr><th>Website</th><th>IP</th><th>Geolocation</th></tr></thead>
 <tbody id="tb-domestic"></tbody>
@@ -157,7 +158,7 @@ td::before { color: #9aa4b2;}
 <tbody id="tb-muse"></tbody>
 </table></div>
 
-<div class="grp">国际 / AI · 出口参照（判断「走了代理长什么样」）</div>
+<div class="grp">国际 / AI · 出口参照</div>
 <div class="card"><table>
 <thead><tr><th>Website</th><th>IP</th><th>Geolocation</th></tr></thead>
 <tbody id="tb-intl"></tbody>
@@ -167,19 +168,11 @@ td::before { color: #9aa4b2;}
 <input type="text" id="customDomain" placeholder="自定义同规则参照域名，如 example.com" aria-label="自定义参照域名">
 <button type="button" onclick="addCustom()">添加参照</button>
 </div>
-<div class="note">想 100% 精确？在你的代理客户端里，把这个自定义域名和 <code>muse.ai</code> 放进<strong>同一个策略组</strong>，它报出的 IP 就是 muse.ai 的真实出口 IP。</div>
 </div>
 
-<div class="card note">
-<strong>为什么 muse.ai 这一行读不到 IP？</strong><br>
-实测 <code>muse.ai</code> 跑在 Vercel 上（不是 Cloudflare），<code>/cdn-cgi/trace</code> 返回 401
-<code>{"error":"Authentication required"}</code>，全站也没有任何回显客户端 IP 的公开接口。所以浏览器 JS 拿不到「访问 muse.ai 时对方看到的 IP」——
-只能看「本站可达性与 HTTP 耗时」+「与它同规则的参照站 IP」来推断。这是浏览器侧的硬限制，不是本页面的 bug。
-首请求包含 DNS、TCP、TLS；想和 <code>ping</code> 比较，请看「复用连接」值，它更接近单程往返。
-想做到 100% 精确：看代理客户端的 Connections 日志（过滤 <code>muse.ai</code> 看走了哪个出站），或用上面的自定义参照域名法。
-</div>
+<div class="links">说明：<a href="https://github.com/Laotree/muse-ip-check#为什么-museai-这一行读不到-ip">为什么读不到 IP</a> · <a href="https://github.com/Laotree/muse-ip-check#想做到-100-精确">如何 100% 确认</a> · <a href="https://github.com/Laotree/muse-ip-check#原理">检测原理</a></div>
 
-<div class="foot">页面没有后端，也没有统计代码：不收集、不上报任何数据。所有检测请求由你的浏览器直接发往各探针站点，结果只显示在你眼前。也可以克隆仓库在本机离线运行。源码：<a href="https://github.com/Laotree/muse-ip-check">Laotree/muse-ip-check</a></div>
+<div class="foot">页面没有后端，也没有统计代码；结果只显示在本机。源码：<a href="https://github.com/Laotree/muse-ip-check">Laotree/muse-ip-check</a></div>
 </div>
 
 <script>
@@ -383,7 +376,7 @@ probeNetease, RESULTS.domestic),
 
 const museTb = document.getElementById("tb-muse");
 const museRow = addRow(museTb, "muse.ai", "本站", "muse", true);
-museRow.tdGeo.textContent = "测连通性（无 IP 回显接口）；首请求含连接建立，复用值更接近 RTT";
+museRow.tdGeo.textContent = "测连通性（无 IP 回显接口）";
 const reachP = (async ()=>{
 try{
 const r = await probeMuseReach();
@@ -443,7 +436,7 @@ const reachText = reach
 
 if(allSame){
 v.innerHTML = '所有探针都从同一个出口 IP <code class="ip">' + esc(allIps[0]) + '</code> 出去 <span class="badge info">无法区分</span>'
-+ '<div class="detail">这通常意味着代理处于全局模式，或当前没有走代理。此时无法判断 muse.ai 是直连还是走代理，请切到规则分流模式后重测，或直接查看代理客户端的 Connections 日志。'
++ '<div class="detail">这通常意味着代理处于全局模式，或当前没有走代理，无法判断 muse.ai 的出口。请切到规则分流模式后重测。'
 + reachText + '</div>';
 return;
 }
@@ -459,13 +452,13 @@ if(proxyIp === direct.top){
 v.innerHTML = 'muse.ai 大概率是<strong>直连</strong>的 <span class="badge ok">直连</span>'
 + '<div class="detail">国内参照 IP <code>' + esc(direct.top) + '</code> 与参考站 IP <code>' + esc(proxyIp) + '</code> 一致，'
 + reachText
-+ '注意：这是推断，参考站与 muse.ai 的分流规则可能不同，100% 确认请看代理客户端的 Connections 日志。</div>' + conflict;
++ '注意：这是推断，参考站与 muse.ai 的分流规则可能不同。</div>' + conflict;
 }else{
 v.innerHTML = 'muse.ai 大概率<strong>走代理</strong> <span class="badge warn">走代理</span>'
 + '<div class="detail">直连 IP <code>' + esc(direct.top) + '</code>；参考站出口 IP <code class="ip">' + esc(proxyIp) + '</code>'
 + '<div class="geo">' + esc(geo) + '</div>'
 + reachText
-+ '判定依据：参考站（claude.ai 或你自定义的域名）与直连 IP 不同。不同分流规则下 muse.ai 可能不同，100% 确认请看代理客户端的 Connections 日志。</div>' + conflict;
++ '判定依据：参考站（claude.ai 或你自定义的域名）与直连 IP 不同。不同分流规则下 muse.ai 可能不同。</div>' + conflict;
 }
 return;
 }
